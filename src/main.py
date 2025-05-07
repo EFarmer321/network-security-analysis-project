@@ -1,16 +1,36 @@
 import uvicorn
-from fastapi import FastAPI, Request
-from rate_limiter import createEndPoint
-from app import app
 from fastapi.responses import JSONResponse
+import app
+from utils import *
+from database import init_database
 
 
 async def testFunction():
     return JSONResponse(content={"response": "i see you"}, status_code=200)
 
-createEndPoint("/test", ["GET"], 10, testFunction)
-createEndPoint("/foo", ["GET", "SET"], 30, testFunction)
-createEndPoint("/bar", ["GET", "SET"], 90, testFunction)
-createEndPoint("/baz", ["GET", "SET"], 90, testFunction)
+def anti_ddos_init():
+    port = 0
 
-uvicorn.run(app, host="127.0.0.1", port=10000)
+    while True:
+        port = input(f"Enter your port number ({PORT_RANGE_MIN} - {PORT_RANGE_MAX}): ")
+        
+        try:
+            port = int(port)
+        except:
+            print("You must enter an integer")
+            continue
+
+        if not is_port_in_valid_range(port):
+            print("Invalid port number")
+        else:
+            break
+
+    print("Input your MySQL password and username. If the database has not been created yet, one will be made for you.")
+    username = input("Enter your database username: ")
+    password = input("Enter database password: ")
+    init_database(username, password)
+
+    uvicorn.run(app, host="127.0.0.1", port=port)
+
+if __name__ == "__main__":
+    anti_ddos_init()

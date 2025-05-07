@@ -2,15 +2,16 @@
 
 This is a project made for the CMPS 3620 (Computer Networks).
 
+## Prerequisites
+
+To run this, you will need:
+
+- Python
+- MySQL
+
 # Running
 
-Before running the project, please make sure that you have Python installed. You will also need to install the dependencies by going into the directory and running:
-
-```
-pip install -r requirements.txt
-```
-
-To run the project, simply run `Make` in the directory.
+To run this project, just run `python src/main.py`
 
 # License
 

@@ -1,3 +1,6 @@
+# Disabled for refactors
+
+'''
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from app import app
@@ -126,3 +129,4 @@ def createEndPoint(path, methods, rate_limit, accept_function, duration=60):
         "rate_limit": rate_limit, "accept_function": accept_function, "duration": duration}
 
     app.add_api_route(path, accept_function, methods=methods)
+'''
