@@ -6,7 +6,7 @@ from collections.abc import Callable, Awaitable
 from mysql.connector import errors
 from datetime import datetime
 from constants import *
-from utils import lerp
+from utils import lerp, clamp
 
 stored_paths = {}
 created_functions = {}
@@ -14,10 +14,9 @@ created_functions = {}
 rejected_response = JSONResponse(
     content={"response": "rejected"}, status_code=429)
 
-def get_rate_limit_from_reputation(reputation):
+def get_rate_limit_from_reputation(reputation: int):
    return lerp(reputation, MAX_REPUTATION, reputation / MAX_REPUTATION)
     
-
 def try_add_ip(ip: str):
     connection = get_connection()
     cursor = connection.cursor()
@@ -90,7 +89,7 @@ def set_reputation(ip: str, new_reputation: int):
             SET Reputation = %s
             WHERE IpAddress = %s
             """,
-            (new_reputation, ip)
+            (clamp(new_reputation, 0, MAX_REPUTATION), ip)
         )
         connection.commit()
     except errors.ProgrammingError as e:
@@ -164,6 +163,7 @@ def handle_rate_limit_request(ip: str, path: str):
     current_limit = row[1]
     reputation_debounce = row[2]
     reputation = get_reputation(ip)
+    max_limit = get_rate_limit_from_reputation(reputation)
 
     if (datetime.now() - last_request_time).total_seconds() >= created_functions[path]["duration"]:
         connection = get_connection()
@@ -189,15 +189,13 @@ def handle_rate_limit_request(ip: str, path: str):
     else:        
         connection = get_connection()
         cursor = connection.cursor()
-        current_limit = min(current_limit + 1, created_functions[path]["min_rate_limit"])
-
-        if not reputation_debounce:
-            set_reputation(ip, max(0, reputation - 1))
+        current_limit = min(current_limit + 1, max_limit)
+    
         try:
             cursor.execute(
                 """
                 UPDATE Endpoints
-                SET CurrentLimit = %s, ReputationDebounce = TRUE
+                SET CurrentLimit = %s
                 WHERE IpAddress = %s AND Endpoint = %s;
                 """,
                 (current_limit, ip, path)
@@ -213,33 +211,94 @@ def handle_rate_limit_request(ip: str, path: str):
 
     # TODO: I feel like this should be returning a status code instead of `False` so we can differentiate between
     # Whether a request failed due to a sql error or if the user is being rate limited.
-    hit_rate_limit = current_limit == created_functions[path]["min_rate_limit"]
+    hit_rate_limit = current_limit == MAX_REPUTATION
 
-    if hit_rate_limit:
+    if hit_rate_limit and not reputation_debounce: 
+        connection = get_connection()
+        cursor = connection.cursor()
+        set_reputation(ip, reputation - 1)
+        
+        try:
+            cursor.execute(
+                """
+                UPDATE Users
+                SET LastOffense = NOW()
+                WHERE IpAddress = %s;
+                """,
+                (ip,)
+            )
+            connection.commit()
+        except errors.ProgrammingError as e:
+            print(f"Caught exception: {e}")
+            connection.rollback()
+        finally:
+            cursor.close()
+            connection.close()
+
         connection = get_connection()
         cursor = connection.cursor()
         
         try:
             cursor.execute(
                 """
-                UPDATE Users
-                SET Reputation = %s
-                WHERE IpAddress = %s;
+                UPDATE Endpoints
+                SET ReputationDebounce = TRUE
+                WHERE IpAddress = %s AND Endpoint = %s;
                 """,
-                (max(0, reputation - 1), ip)
+                (ip, path)
             )
             connection.commit()
         except errors.ProgrammingError as e:
             print(f"Caught exception: {e}")
-            success = False
+            connection.rollback()
+        finally:
+            cursor.close()
+            connection.close()
+    elif not hit_rate_limit:
+        last_offense = datetime.now()      
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        try:
+            cursor.execute(
+                """
+                SELECT LastOffense
+                FROM Users
+                WHERE IpAddress = %s;
+                """,
+                (ip,)
+            )
+            last_offense = cursor.fetchone()[0]
+        except errors.ProgrammingError as e:
+            print(f"Caught exception: {e}")
             connection.rollback()
         finally:
             cursor.close()
             connection.close()
 
-        success = False
+        if (datetime.now() - last_offense).total_seconds() >= REPUTATION_INCREASE_INTERVAL:
+            set_reputation(ip, reputation + 1)
+            connection = get_connection()
+            cursor = connection.cursor()
 
-    return success
+            try:
+                cursor.execute(
+                    """
+                    UPDATE Users
+                    SET LastOffense = NOW()
+                    WHERE IpAddress = %s;
+                    """,
+                    (ip,)
+                )
+                connection.commit()
+            except errors.ProgrammingError as e:
+                print(f"Caught exception: {e}")
+                connection.rollback()
+            finally:
+                cursor.close()
+                connection.close()  
+
+    return success and not hit_rate_limit
 
 @app.middleware("http")
 async def try_rate_limit(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
