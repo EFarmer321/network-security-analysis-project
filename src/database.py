@@ -44,7 +44,7 @@ def init_database(username, password):
     try:
         connection = get_connection()
         cursor = connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS User (IpAddress INT PRIMARY KEY, Reputation INT, LastOffense DATETIME)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS User (IpAddress VARCHAR(50) PRIMARY KEY, Reputation INT, LastOffense DATETIME DEFAULT NOW())")
         cursor.close()
         connection.close()
     except errors.ProgrammingError:
