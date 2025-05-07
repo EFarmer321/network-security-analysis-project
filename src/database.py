@@ -44,10 +44,31 @@ def init_database(username, password):
     try:
         connection = get_connection()
         cursor = connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS User (IpAddress VARCHAR(50) PRIMARY KEY, Reputation INT, LastOffense DATETIME DEFAULT NOW())")
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS User (
+                IpAddress VARCHAR(50) NOT NULL PRIMARY KEY,
+                Reputation INT,
+                LastOffense DATETIME DEFAULT NOW()
+            );
+            """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS Endpoint (
+                Endpoint VARCHAR(255) NOT NULL,
+                IpAddress VARCHAR(50) NOT NULL,
+                LastRequestTime DATETIME,
+                CurrentLimit INT DEFAULT 0,
+                PRIMARY KEY (IpAddress, Endpoint),
+                FOREIGN KEY (IpAddress) REFERENCES User(IpAddress)
+                ON DELETE CASCADE
+            );
+            """
+        )
         cursor.close()
         connection.close()
-    except errors.ProgrammingError:
-        print("Failed to create table.")
+    except errors.ProgrammingError as e:
+        print(f"Failed to create table: {e}")
         exit(1)
     
