@@ -1,15 +1,18 @@
 import uvicorn
 from fastapi.responses import JSONResponse
-import app
+from app import app
 from utils import *
 from database import init_database
+from rate_limiter import create_end_point
 
-
-async def testFunction():
-    return JSONResponse(content={"response": "i see you"}, status_code=200)
+async def test_function():
+    return JSONResponse(content={"response": "HELLO YES HELLO!!!!!@!@#!!@#!!!"}, status_code=200)
 
 def anti_ddos_init():
     port = 0
+
+    create_end_point("/test", ["GET"], 10, 50, test_function, 15)
+
 
     while True:
         port = input(f"Enter your port number ({PORT_RANGE_MIN} - {PORT_RANGE_MAX}): ")

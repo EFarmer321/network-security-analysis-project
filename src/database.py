@@ -46,7 +46,7 @@ def init_database(username, password):
         cursor = connection.cursor()
         cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS User (
+            CREATE TABLE IF NOT EXISTS Users (
                 IpAddress VARCHAR(50) NOT NULL PRIMARY KEY,
                 Reputation INT,
                 LastOffense DATETIME DEFAULT NOW()
@@ -55,13 +55,13 @@ def init_database(username, password):
         )
         cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS Endpoint (
+            CREATE TABLE IF NOT EXISTS Endpoints (
                 Endpoint VARCHAR(255) NOT NULL,
                 IpAddress VARCHAR(50) NOT NULL,
                 LastRequestTime DATETIME,
                 CurrentLimit INT DEFAULT 0,
                 PRIMARY KEY (IpAddress, Endpoint),
-                FOREIGN KEY (IpAddress) REFERENCES User(IpAddress)
+                FOREIGN KEY (IpAddress) REFERENCES Users(IpAddress)
                 ON DELETE CASCADE
             );
             """
