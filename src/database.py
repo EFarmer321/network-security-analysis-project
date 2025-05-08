@@ -25,6 +25,7 @@ def init_database(username, password):
         connection = get_connection()
         cursor = connection.cursor()
         cursor.execute("CREATE DATABASE IF NOT EXISTS `anti-ddos`")
+        connection.commit()
         cursor.close()
         connection.close()
     except errors.ProgrammingError:
@@ -58,14 +59,14 @@ def init_database(username, password):
                 Endpoint VARCHAR(255) NOT NULL,
                 IpAddress VARCHAR(50) NOT NULL,
                 LastRequestTime DATETIME,
-                ReputationDebounce BOOL DEFAULT FALSE,
                 CurrentLimit INT DEFAULT 0,
+                ReputationDebounce BOOL DEFAULT FALSE,
                 PRIMARY KEY (IpAddress, Endpoint),
-                FOREIGN KEY (IpAddress) REFERENCES Users(IpAddress)
-                ON DELETE CASCADE
+                FOREIGN KEY (IpAddress) REFERENCES Users(IpAddress) ON DELETE CASCADE
             );
             """
         )
+        connection.commit()
         cursor.close()
         connection.close()
     except errors.ProgrammingError as e:
