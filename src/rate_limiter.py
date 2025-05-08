@@ -15,7 +15,7 @@ rejected_response = JSONResponse(
     content={"response": "rejected"}, status_code=429)
 
 def get_rate_limit_from_reputation(reputation: int):
-   return lerp(reputation, MAX_REPUTATION, reputation / MAX_REPUTATION)
+   return int(lerp(reputation, MAX_REPUTATION, reputation / MAX_REPUTATION))
     
 def try_add_ip(ip: str):
     connection = get_connection()
@@ -33,7 +33,7 @@ def try_add_ip(ip: str):
             VALUES 
                 (
                     %s, 
-                    0
+                    5
                 ) 
             ON DUPLICATE KEY UPDATE IpAddress = IpAddress;
             """,
@@ -211,7 +211,7 @@ def handle_rate_limit_request(ip: str, path: str):
 
     # TODO: I feel like this should be returning a status code instead of `False` so we can differentiate between
     # Whether a request failed due to a sql error or if the user is being rate limited.
-    hit_rate_limit = current_limit == MAX_REPUTATION
+    hit_rate_limit = current_limit >= max_limit
 
     if hit_rate_limit and not reputation_debounce: 
         connection = get_connection()
