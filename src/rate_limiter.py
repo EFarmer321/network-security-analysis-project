@@ -15,8 +15,8 @@ created_functions = {}
 rejected_response = JSONResponse(
     content={"response": "rejected"}, status_code=429)
 
-def get_rate_limit_from_reputation(reputation: int):
-   return floor(lerp(reputation, MAX_REPUTATION, reputation / MAX_REPUTATION))
+def get_rate_limit_from_reputation(reputation: int, min_rate_limit: int, max_rate_limit: int):
+   return floor(lerp(min_rate_limit, max_rate_limit, reputation / MAX_REPUTATION))
     
 def try_add_ip(ip: str):
     connection = get_connection()
@@ -164,7 +164,7 @@ def handle_rate_limit_request(ip: str, path: str):
     current_limit = row[1]
     reputation_debounce = row[2]
     reputation = get_reputation(ip)
-    max_limit = get_rate_limit_from_reputation(reputation)
+    max_limit = get_rate_limit_from_reputation(reputation, created_functions[path]["min_rate_limit"], created_functions[path]["min_rate_limit"])
 
     if (datetime.now() - last_request_time).total_seconds() >= created_functions[path]["duration"]:
         connection = get_connection()
