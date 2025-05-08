@@ -8,7 +8,7 @@ def get_connection():
     
     return pool.get_connection()
 
-def init_database(username, password, port):
+def init_database(username, password):
     global pool
 
     try:
