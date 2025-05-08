@@ -2,11 +2,13 @@ from mysql.connector import pooling, errors
 
 pool = None
 
+
 def get_connection():
     if pool == None:
-        raise("You need to call `init_database` before calling `get_connection`")
-    
+        raise ("You need to call `init_database` before calling `get_connection`")
+
     return pool.get_connection()
+
 
 def init_database(username, password):
     global pool
@@ -38,7 +40,6 @@ def init_database(username, password):
         database="anti-ddos"
     )
 
-
     try:
         connection = get_connection()
         cursor = connection.cursor()
@@ -57,6 +58,7 @@ def init_database(username, password):
                 Endpoint VARCHAR(255) NOT NULL,
                 IpAddress VARCHAR(50) NOT NULL,
                 LastRequestTime DATETIME,
+                ReputationDebounce BOOL DEFAULT FALSE,
                 CurrentLimit INT DEFAULT 0,
                 PRIMARY KEY (IpAddress, Endpoint),
                 FOREIGN KEY (IpAddress) REFERENCES Users(IpAddress)
@@ -69,4 +71,3 @@ def init_database(username, password):
     except errors.ProgrammingError as e:
         print(f"Failed to create table: {e}")
         exit(1)
-    
