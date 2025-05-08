@@ -164,7 +164,7 @@ def handle_rate_limit_request(ip: str, path: str):
     current_limit = row[1]
     reputation_debounce = row[2]
     reputation = get_reputation(ip)
-    max_limit = get_rate_limit_from_reputation(reputation, created_functions[path]["min_rate_limit"], created_functions[path]["min_rate_limit"])
+    max_limit = get_rate_limit_from_reputation(reputation, created_functions[path]["min_rate_limit"], created_functions[path]["max_rate_limit"])
 
     if (datetime.now() - last_request_time).total_seconds() >= created_functions[path]["duration"]:
         connection = get_connection()
