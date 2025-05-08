@@ -6,6 +6,7 @@ from collections.abc import Callable, Awaitable
 from mysql.connector import errors
 from datetime import datetime
 from constants import *
+from math import floor
 from utils import lerp, clamp
 
 stored_paths = {}
@@ -15,7 +16,7 @@ rejected_response = JSONResponse(
     content={"response": "rejected"}, status_code=429)
 
 def get_rate_limit_from_reputation(reputation: int):
-   return int(lerp(reputation, MAX_REPUTATION, reputation / MAX_REPUTATION))
+   return floor(lerp(reputation, MAX_REPUTATION, reputation / MAX_REPUTATION))
     
 def try_add_ip(ip: str):
     connection = get_connection()
