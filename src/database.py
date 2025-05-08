@@ -48,7 +48,7 @@ def init_database(username, password):
             """
             CREATE TABLE IF NOT EXISTS Users (
                 IpAddress VARCHAR(50) NOT NULL PRIMARY KEY,
-                Reputation INT,
+                Reputation INT DEFAULT 5,
                 LastOffense DATETIME DEFAULT NOW()
             );
             """
